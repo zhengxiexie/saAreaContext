@@ -10,9 +10,7 @@
 #define CONTEXT_BASESIZE      (1000000ul)
 #define CONTEXT_SORT_BASESIZE (100000ul)
 #define CONTEXT_PART (10)
-
 #define CFG(x) (g_config._##x)
-
 #define NUM_OF_FIELD (5)
 
 export_decode(imsi);
@@ -21,7 +19,7 @@ export_decode(event_type);
 export_decode(lac);
 export_decode(cell);
 
-struct _config_t {
+typedef struct _config_t {
     int  _sort_min;
     int  _sort_buffer;
     int  _output_interval;
@@ -40,8 +38,7 @@ struct _config_t {
     char _tmp_filename[256];
     char _area_cell_map[256];
     char _backup_dir[128];
-};
-typedef struct _config_t config_t;
+}config_t;
 
 extern config_t g_config;
 

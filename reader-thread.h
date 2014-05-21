@@ -19,23 +19,20 @@ extern volatile int exit_flag;
 #include <pthread.h>
 #include <malloc.h>
 
-struct signal_entry_t {
+typedef struct signal_entry_t_tag {
     char  imsi[16];
     time_t timestamp;
     char lac_cell[12];
     uint16_t event;
-};
-typedef struct signal_entry_t signal_entry_t;
+}signal_entry_t;
 
-struct context_sort_buffer_t {
+typedef struct context_sort_buffer_t_tag {
     int    size;
     int    used;
     time_t time;
     signal_entry_t * buffer;
-};
-typedef struct context_sort_buffer_t context_sort_buffer_t;
+}context_sort_buffer_t;
 
 void * read_file_thread(void * data);
 
 #endif /* __READER_THREAD_H__ */
-

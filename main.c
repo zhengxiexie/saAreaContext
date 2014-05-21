@@ -16,7 +16,8 @@ context_t context;
 context_sort_buffer_t * context_sort_buf = NULL;
 pthread_attr_t attr;
 
-int main(int argc, char * argv[]) {
+int main(int argc, char * argv[])
+{
     char process_name[256];
     char cwd[256];
     char file_path[256];
@@ -24,16 +25,15 @@ int main(int argc, char * argv[]) {
 
     pthread_t reader;
 
-    // get cwd and process name
     memset(process_name, 0, 256);
     memset(cwd, 0, 256);
     getcwd(cwd, 256);
     strcpy(process_name, basename(argv[0]));
 
-    logmsg(stdout, "===== Started, process name: %s, cwd: %s =====", process_name, cwd);
+    logmsg(stdout, "Started. process name[%s] cwd[%s]", process_name, cwd);
 
     snprintf(file_path, 256, "../../etc/c/%s.conf", process_name);
-    logmsg(stdout, "Reading config file %s", file_path);
+    logmsg(stdout, "Reading config file[%s]", file_path);
     ret = read_config(file_path);
     if (ret) {
         logmsg(stdout, "Reading config file failed, exiting...");
@@ -41,7 +41,7 @@ int main(int argc, char * argv[]) {
     }
 
     snprintf(file_path, 256, "../../etc/c/%s_decode.conf", process_name);
-    logmsg(stdout, "Reading decode file %s", file_path);
+    logmsg(stdout, "Reading decode file[%s]", file_path);
     ret = read_decode_map(file_path);
     if (ret) {
         logmsg(stdout, "Reading decode file failed, exiting...");
@@ -50,7 +50,7 @@ int main(int argc, char * argv[]) {
 
     // exit file
     snprintf(g_exitflag_file, 256, "../../flag/%s.exitflag", process_name);
-    logmsg(stdout, "Exit flag file: %s", g_exitflag_file);
+    logmsg(stdout, "Exit flag file[%s]", g_exitflag_file);
 
     // init thread
     pthread_attr_init(&attr);
@@ -71,4 +71,3 @@ int main(int argc, char * argv[]) {
 
     return 0;
 }
-

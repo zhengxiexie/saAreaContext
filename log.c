@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 size_t _log(int loglv, FILE * f,
            int line, const char * file,
@@ -17,6 +18,8 @@ size_t _log(int loglv, FILE * f,
     char    tmp_ts[64];
     time_t  tmp_time;
 
+	pthread_t pthread_id = pthread_self();
+
     if (loglv > LOGLV) return 0;
 
     tmp_time = time(NULL);
@@ -27,6 +30,6 @@ size_t _log(int loglv, FILE * f,
     vsnprintf(tmp_log, 1023, fmt, args);
     va_end(args);
 
-    ret = fprintf(f, "%s [%s:%d]: %s\n", tmp_ts, file, line, tmp_log);
+    ret = fprintf(f, "[%s][%-15s:%4d][tid:%15lu]: %s\n", tmp_ts, file, line, pthread_id, tmp_log);
     return ret;
 }

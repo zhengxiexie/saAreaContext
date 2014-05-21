@@ -11,7 +11,7 @@ typedef struct _context_thread_t {
     pthread_t tid;
     pthread_mutex_t mutex;
     pthread_cond_t  pushed;
-    struct signal_entry_t  buf[CONTEXT_BUF_CACHED];
+    signal_entry_t  buf[CONTEXT_BUF_CACHED];
     int read;
     int used;
 } context_thread_t;

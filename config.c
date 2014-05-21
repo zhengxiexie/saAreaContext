@@ -19,7 +19,8 @@ def_decode(event_type);
 def_decode(lac);
 def_decode(cell);
 
-int read_config(const char * filename) {
+int read_config(const char * filename)
+{
     FILE * cfg_file;
     char word[2][256];
     char line[1024];
@@ -106,7 +107,8 @@ int read_config(const char * filename) {
     return 0;
 }
 
-int read_decode_map(const char * filename) {
+int read_decode_map(const char * filename)
+{
     FILE * f;
     char line[256];
     char * comma;
@@ -138,7 +140,8 @@ int read_decode_map(const char * filename) {
     return 0;
 }
 
-char * get_line(FILE * f, char * line, int len) {
+char * get_line(FILE * f, char * line, int len)
+{
     char * ret = fgets(line, len, f);
     int i = 0;
     if (!ret) return NULL;
