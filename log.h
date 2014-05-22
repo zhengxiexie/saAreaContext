@@ -17,6 +17,8 @@ size_t _log(int loglv, FILE * f,
            int line, const char * file,
            const char *fmt, ...);
 
+void print_logo( char *  );
+
 #define logmsg(f, ...) do { \
         _log(3, f, __LINE__, __FILE__, __VA_ARGS__); \
     } while (0)

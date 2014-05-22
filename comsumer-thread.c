@@ -12,7 +12,8 @@ extern volatile int exit_flag;
 
 context_thread_t * context_thread;
 
-void * comsumer_thread(void * th_num) {
+void * comsumer_thread(void * th_num)
+{
     int thread_num = *((int*)th_num);
     context_thread_t * cthread = &context_thread[thread_num];
     signal_entry_t * se = NULL;
@@ -22,7 +23,8 @@ void * comsumer_thread(void * th_num) {
     cthread->tid = pthread_self();
 
     logmsg(stdout, "Comsumer thread %d started", thread_num);
-    while (!exit_flag || cthread->used) {
+    while (!exit_flag || cthread->used)
+   	{
         // use mix of spinlock and mutex lock here
         if (cthread->used != 0) {
             pthread_mutex_lock(&cthread->mutex);
@@ -46,12 +48,14 @@ void * comsumer_thread(void * th_num) {
 }
 
 // busy waiting all comsumer thread to empty their buffer
-int wait_context_thread() {
+int wait_context_thread()
+{
     int notallempty = 1;
     int i = 0;
 
     logmsg(stdout, "Waiting all context thread");
-    while (notallempty) {
+    while (notallempty)
+   	{
         notallempty = 0;
         for (i = 0; i < CFG(context_thread); i++) {
             if (context_thread[i].used != 0) notallempty = 1;
@@ -61,7 +65,8 @@ int wait_context_thread() {
     return 0;
 }
 
-int init_context_thread() {
+int init_context_thread()
+{
     int i = 0;
 
     // start all comsumer thread;
@@ -76,4 +81,3 @@ int init_context_thread() {
 
     return 0;
 }
-

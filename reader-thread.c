@@ -47,7 +47,8 @@ static int comp_signal_func(const void * se1, const void * se2) {
     return ((signal_entry_t*)se1)->timestamp - ((signal_entry_t*)se2)->timestamp;
 }
 
-void * read_file_thread(void * data) {
+void * read_file_thread(void * data)
+{
     int  i = 0;
     int  num_of_file = 0;
     int  max_num_file = 0;
@@ -89,9 +90,11 @@ void * read_file_thread(void * data) {
     logmsg(stdout, "Reading thread started.");
 
     logmsg(stdout, "Memory alloc detail:");
+
     malloc_stats();
 
-    while (1) {
+    while (1)
+   	{
         dp = opendir(CFG(read_dir));
         if (!dp) {
             logmsg(stderr, "Cannot open dir %s, please check. will retry in %d seconds",
@@ -99,21 +102,28 @@ void * read_file_thread(void * data) {
             goto retry;
         }
 
+		// cp the filenames into a list
         num_of_file  = 0;
         max_num_file = 32;
         file_list = (file_info_t*)calloc(max_num_file, sizeof(file_info_t));
-        while ((entry = readdir(dp)) != NULL) {
+        while ((entry = readdir(dp)) != NULL)
+	   	{
             char read_filename[256];
             sprintf(read_filename, "%s/%s", CFG(read_dir), entry->d_name);
+
             // skip useless file
-            if ((strcmp(read_filename, ".") == 0)
-                || (strcmp(read_filename, "..") == 0)
-                || (lstat(read_filename, &file_stat) < 0)
-                || (!S_ISREG(file_stat.st_mode))
-                || strstr(read_filename, ".tmp") != NULL) continue;
+            if ((strcmp(read_filename, ".") == 0)		||
+                (strcmp(read_filename, "..") == 0)		||
+                (lstat(read_filename, &file_stat) < 0)  ||
+                (!S_ISREG(file_stat.st_mode))			||
+				strstr(read_filename, ".tmp") != NULL)
+			{
+				 continue;
+			}
 
             // doble the size of file_list when needed
-            if (num_of_file == max_num_file) {
+            if (num_of_file == max_num_file)
+		   	{
                 file_info_t * tmp_list;
                 max_num_file *= 2;
                 tmp_list  = file_list;
@@ -132,7 +142,8 @@ void * read_file_thread(void * data) {
 
         if (num_of_file) logmsg(stdout, "%d file will be processed this time.", num_of_file);
 
-        for (i = 0; i < num_of_file; i++) {
+        for (i = 0; i < num_of_file; i++)
+	   	{
             char file_line[MAX_LINE];
             char read_filename[256];
             FILE * rfile;
@@ -140,7 +151,8 @@ void * read_file_thread(void * data) {
             strcpy(read_filename, file_list[i].filename);
             logmsg(stdout, "Processing file %s", read_filename);
             rfile = fopen(read_filename, "r");
-            while (read_line(rfile, file_line, 1024) != NULL) {
+            while (read_line(rfile, file_line, 1024) != NULL)
+		   	{
                 if (parse_line(file_line, &se)) continue;
                 push_to_sort_buf(&se);
             }
@@ -150,12 +162,14 @@ void * read_file_thread(void * data) {
             remove(read_filename);
 
             // check exit flag
-            if (check_exit_flag()) {
+            if (check_exit_flag())
+		   	{
                 exit_flag = 1;
                 break;
             }
 
-            if (need_update_area_cell_map) {
+            if (need_update_area_cell_map)
+		   	{
                 int ret = 0;
                 need_update_area_cell_map = 0;
                 logmsg(stdout, "Updateing area_cell_map from %s on SIGUSR1",
@@ -169,7 +183,8 @@ void * read_file_thread(void * data) {
 
         if (check_exit_flag()) exit_flag = 1;
 
-        if (exit_flag) {
+        if (exit_flag)
+	   	{
             logmsg(stdout, "Exitflag recived, exiting read thread...");
             // exiting
             exit_flag = 1;

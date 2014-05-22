@@ -311,7 +311,8 @@ int time_format(const time_t t, char * line) {
     return 0;
 }
 
-int hourly_update_context(time_t time) {
+int hourly_update_context(time_t time)
+{
     int i = 0, j = 0, k = 0;
     context_seg_t     * ch = NULL;
     context_content_t * cc = NULL;
@@ -323,19 +324,24 @@ int hourly_update_context(time_t time) {
     wait_context_thread();
 
     // lock all context
-    for (i = 0; i < context.part; i++) {
+    for (i = 0; i < context.part; i++)
+   	{
         pthread_mutex_lock(&context.contexts[i].mutex_lock);
     }
 
-    for (i = 0; i < context.part; i++) {
+    for (i = 0; i < context.part; i++)
+   	{
         ch = &context.contexts[i];
-        for (j = 0; j < ch->size; j++) {
-            for (cc = &ch->content[j]; cc && cc->imsi[0]; cc = cc -> next) {
+        for (j = 0; j < ch->size; j++)
+	   	{
+            for (cc = &ch->content[j]; cc && cc->imsi[0]; cc = cc -> next)
+		   	{
                 area_t * area = NULL;
                 total_in_context++;
                 for (k = 0, area = cc->areas;
                      k < cc->num_of_area;
-                     k++, area = area->next) {
+                     k++, area = area->next)
+			   	{
                     total_area ++;
                     time_t ps = MAX(time - CFG(output_interval), area->come_time);
                     area->resident_time = time - ps;
@@ -391,7 +397,8 @@ int hourly_update_context(time_t time) {
     return 0;
 }
 
-int parse_line(const char * line, signal_entry_t * se) {
+int parse_line(const char * line, signal_entry_t * se)
+{
     int pos = 0;
     char * word[15];
     char line_tmp[LEN_LINE];
@@ -428,7 +435,8 @@ int parse_line(const char * line, signal_entry_t * se) {
     return 0;
 }
 
-int check_hourly_update(time_t t) {
+int check_hourly_update(time_t t)
+{
     time_t rd_t = (t + CFG(tz_offset)) / CFG(output_interval) * CFG(output_interval) - CFG(tz_offset);
 
     // time
@@ -512,7 +520,8 @@ int daily_cleanup(time_t t) {
 }
 
 // dump all context to file
-int dump_context(const char * filename) {
+int dump_context(const char * filename)
+{
     FILE * dump_file = fopen(filename, "wb");
     int i = 0, j = 0;
 
@@ -525,17 +534,23 @@ int dump_context(const char * filename) {
 
     logmsg(stdout, "Backing up context to %s", filename);
     // write all context
-    for (i = 0; i < CONTEXT_PART; i++) {
-        for (j = 0; j < context.contexts[i].size; j++) {
-            for (cc = &context.contexts[i].content[j]; cc && cc->imsi[0]; cc = cc->next) {
+    for (i = 0; i < CONTEXT_PART; i++)
+   	{
+        for (j = 0; j < context.contexts[i].size; j++)
+	   	{
+            for (cc = &context.contexts[i].content[j]; cc && cc->imsi[0]; cc = cc->next)
+		   	{
                 if (cc->num_of_area == 0) continue;
                 fwrite(cc, sizeof(context_content_t), 1, dump_file);
                 area_t * area = NULL;
-                for (area = cc->areas; area; area = area->next)
+                for (area = cc->areas; area; area = area->next){
                     fwrite(area, sizeof(area_t), 1, dump_file);
-            }
-        }
-    }
+
+				}
+			}
+		}
+	}
+
     fflush(dump_file);
     fclose(dump_file);
     logmsg(stdout, "Backing up context done!", filename);
@@ -543,7 +558,8 @@ int dump_context(const char * filename) {
 }
 
 // restore context from backup file
-int restore_context(const char * filename) {
+int restore_context(const char * filename)
+{
     FILE * dump_file = fopen(filename, "rb");
     context_content_t * cc;
     int backuped_user = 0, backuped_area = 0, i = 0;
@@ -555,7 +571,8 @@ int restore_context(const char * filename) {
 
     logmsg(stdout, "Restoring context from %s", filename);
     cc = (context_content_t *)malloc(sizeof(context_content_t) * 1);
-    while (fread(cc, sizeof(context_content_t), 1, dump_file)) {
+    while (fread(cc, sizeof(context_content_t), 1, dump_file))
+   	{
         cc->next = NULL;
         area_t * area = NULL;
         for (i = 0; i < cc->num_of_area; i++) {
@@ -575,7 +592,8 @@ int restore_context(const char * filename) {
     return 0;
 }
 
-static int restore_one_context(context_content_t * c) {
+static int restore_one_context(context_content_t * c)
+{
     uint64_t hash_in = BKDRHash(c->imsi) % context.size;
     uint64_t part    = hash_in % context.part;
     uint64_t offset  = hash_in / context.part;
@@ -598,7 +616,8 @@ static int restore_one_context(context_content_t * c) {
     return 0;
 }
 
-int init_context() {
+int init_context()
+{
     int i = 0;
     int size_per_part = 0;
 
@@ -608,11 +627,14 @@ int init_context() {
     context.part = CONTEXT_PART;
     size_per_part = context.size / context.part;
 
-    logmsg(stdout, "starting to allocated Context: %dbyte x %dM x %d = %1.3fMB",
-            sizeof(context_content_t), size_per_part / 1000000, context.part,
-            size_per_part * sizeof(context_content_t) / 1024.0 / 1024,
-            context.part);
-    for (i = 0; i < context.part; i++) {
+    logmsg(stdout, "Starting to allocated Context: %dbyte x %dM x %d = %1.3fMB",
+            sizeof(context_content_t),
+			size_per_part / 1000000,
+			context.part,
+            10 * size_per_part * sizeof(context_content_t) / 1024.0 / 1024);
+
+    for (i = 0; i < context.part; i++)
+   	{
         context.contexts[i].size = size_per_part;
         pthread_mutex_init(&context.contexts[i].mutex_lock, NULL);
         context.contexts[i].content = calloc(size_per_part, sizeof(context_content_t));
@@ -632,7 +654,8 @@ int init_context() {
     return 0;
 }
 
-int read_cell_map(const char * filename) {
+int read_cell_map(const char * filename)
+{
     FILE * map_file = NULL;
     uint32_t new_num = 0;
     uint32_t i = 0;
@@ -640,12 +663,20 @@ int read_cell_map(const char * filename) {
 
     do {
         map_file = fopen(filename, "r");
-        if (!map_file) break;
+
+		if (!map_file){
+			break;
+		}
+
         // free old area_cell_map
-        if (area_cell_map) free(area_cell_map);
+        if (area_cell_map){
+			free(area_cell_map);
+		}
 
         // get num of area_cell_map
-        while (EOF != fscanf(map_file, "%s\n", line)) new_num++;
+		while (EOF != fscanf(map_file, "%s\n", line)){
+			new_num++;
+		}
         if (new_num == 0) break;
         fseek(map_file, 0, SEEK_SET);
 
@@ -654,18 +685,19 @@ int read_cell_map(const char * filename) {
         num_of_area_cell_map = 0;
 
         // alloc new area_cell_map
-        area_cell_map = (area_cell_map_t*)
-            calloc(new_num, sizeof(area_cell_map_t));
+        area_cell_map = (area_cell_map_t*)calloc(new_num, sizeof(area_cell_map_t));
         if (!area_cell_map) break;
 
         // read new area_cell_map
-        for (i = 0; i < new_num; i++) {
+        for (i = 0; i < new_num; i++)
+	   	{
             fscanf(map_file, "%s\n", line);
             char * pos_comma = strchr(line, ',');
             pos_comma[0] = 0;
             strcpy(area_cell_map[i].lac_cell, line);
             strcpy(area_cell_map[i].area_id, pos_comma + 1);
         }
+
         num_of_area_cell_map = new_num;
         return new_num;
     } while(0);
@@ -680,11 +712,13 @@ int read_cell_map(const char * filename) {
     }
 }
 
-static int find_area_id(const char * lac_cell, area_cell_map_t ** start) {
+static int find_area_id(const char * lac_cell, area_cell_map_t ** start)
+{
     int l = 0, r = num_of_area_cell_map, m = 0;
     int res = 0, found = 0;
 
-    while (l < r) {
+    while (l < r)
+   	{
         m = (l + r) / 2;
         res = strcmp(lac_cell, area_cell_map[m].lac_cell);
 
@@ -698,7 +732,8 @@ static int find_area_id(const char * lac_cell, area_cell_map_t ** start) {
         }
     }
 
-    if (found) {
+    if (found)
+   	{
         l = r = m;
         // trace back
         while (l >= 0 && 0 == strcmp(lac_cell, area_cell_map[l - 1].lac_cell))
@@ -713,4 +748,3 @@ static int find_area_id(const char * lac_cell, area_cell_map_t ** start) {
         return 0;
     }
 }
-

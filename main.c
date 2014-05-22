@@ -18,6 +18,8 @@ pthread_attr_t attr;
 
 int main(int argc, char * argv[])
 {
+	print_logo("apple");
+
     char process_name[256];
     char cwd[256];
     char file_path[256];
@@ -30,7 +32,7 @@ int main(int argc, char * argv[])
     getcwd(cwd, 256);
     strcpy(process_name, basename(argv[0]));
 
-    logmsg(stdout, "Started. process name[%s] cwd[%s]", process_name, cwd);
+	logmsg(stdout, "Started. process name[%s] cwd[%s]", process_name, cwd);
 
     snprintf(file_path, 256, "../../etc/c/%s.conf", process_name);
     logmsg(stdout, "Reading config file[%s]", file_path);
