@@ -35,17 +35,18 @@
 #include "comsumer-thread.h"
 #include "log.h"
 
-typedef struct _output_file_t {
+typedef struct output_file_t_tag
+{
     char filename[256];
     time_t filename_ts;
     FILE * output;
 } output_file_t;
 
-struct area_cell_map_t {
+typedef struct area_cell_map_t_tag
+{
     char area_id[12];
     char lac_cell[LEN_LACCELL];
-};
-typedef struct area_cell_map_t area_cell_map_t;
+} area_cell_map_t;
 
 area_cell_map_t * area_cell_map = NULL;
 uint32_t num_of_area_cell_map = 0;
@@ -68,8 +69,8 @@ static int restore_one_context(context_content_t * c);
 static int write_context(const context_content_t * content, const area_t * a);
 static int find_area_id(const char * lac_cell, area_cell_map_t ** start);
 
-static inline
-uint64_t BKDRHash(const char * str) {
+static inline uint64_t BKDRHash(const char * str)
+{
     static const unsigned int seed = 1313; // 31 131 1313 13131 131313 etc..
     uint64_t hash0 = 0;
     while (*str) hash0 = hash0 * seed + (*str++);
@@ -78,7 +79,8 @@ uint64_t BKDRHash(const char * str) {
 
 // update context. invoke do_update when content is already in context
 // otherwise insert new content into context.
-int update_context(signal_entry_t * se) {
+int update_context(signal_entry_t * se)
+{
     uint64_t hash_in = BKDRHash(se->imsi) % context.size;
     uint64_t part    = hash_in % context.part;
     uint64_t offset  = hash_in / context.part;
@@ -95,8 +97,10 @@ int update_context(signal_entry_t * se) {
     pthread_mutex_lock(&context_seg->mutex_lock);
     for (temp_content = &context_seg->content[offset];
          temp_content && temp_content->imsi[0];
-         temp_content = temp_content->next) {
-        if (0 == strcmp(se->imsi, temp_content->imsi)) {
+         temp_content = temp_content->next)
+   	{
+        if (0 == strcmp(se->imsi, temp_content->imsi))
+	   	{
             flag_content_found = 1;
             break;
         }
@@ -130,8 +134,8 @@ int update_context(signal_entry_t * se) {
 	logmsg(stdout, "Insert a new context_content_t area_id[%s] come_time[%d] last_event_time[%d] last_event_type[%d]", new_area_tmp->area_id);\
 } while (0)
 
-static
-int do_update_context(context_content_t * cc, const signal_entry_t * se) {
+static int do_update_context(context_content_t * cc, const signal_entry_t * se)
+{
     int flag_area_found = 0, i = 0;
 
     // lookup area_cell_map
@@ -141,9 +145,11 @@ int do_update_context(context_content_t * cc, const signal_entry_t * se) {
     area_t ** area = NULL;
 
     // update old areas, leaveing and staying
-    for (area = &cc->areas; *area; ) {
+    for (area = &cc->areas; *area; )
+   	{
         flag_area_found = 0;
-        for (i = 0; i < num_of_area; i++) {
+        for (i = 0; i < num_of_area; i++)
+	   	{
             if (0 == strcmp(map[i].area_id, (*area)->area_id)) {
                 flag_area_found = 1;
                 break;
@@ -172,9 +178,11 @@ int do_update_context(context_content_t * cc, const signal_entry_t * se) {
     area_t ** tail_next = area;
     area_t *  new_areas = NULL;
 
-    for (i = 0; i < num_of_area; i++) {
+    for (i = 0; i < num_of_area; i++)
+   	{
         flag_area_found = 0;
-        for (area = &cc->areas; *area; area = &(*area)->next) {
+        for (area = &cc->areas; *area; area = &(*area)->next)
+	   	{
             if (0 == strcmp(map[i].area_id, (*area)->area_id)) {
                 flag_area_found = 1;
                 break;
@@ -185,13 +193,14 @@ int do_update_context(context_content_t * cc, const signal_entry_t * se) {
             cc->num_of_area++;
         }
     }
+
     *tail_next = new_areas;
 
     return 0;
 }
 
-static
-int do_new_context(context_content_t * cc, const signal_entry_t * se) {
+static int do_new_context(context_content_t * cc, const signal_entry_t * se)
+{
     context_content_t * tmp_cc = NULL;
     int i = 0;
 
@@ -214,15 +223,17 @@ int do_new_context(context_content_t * cc, const signal_entry_t * se) {
 
     // user enter new area
     tmp_cc->num_of_area = num_of_area;
-    for (i = 0; i < num_of_area; i++) {
+    for (i = 0; i < num_of_area; i++)
+   	{
         APPEND_NEW_AREA(cc->areas, se, map[i].area_id);
     }
     return 0;
 }
 
-static
-int do_update_event_stat(area_t * cc, const signal_entry_t * se) {
-    switch (se->event) {
+static int do_update_event_stat(area_t * cc, const signal_entry_t * se)
+{
+    switch (se->event)
+   	{
         case 101:
             cc->calling_call_counts++;
             break;
@@ -248,7 +259,8 @@ int do_update_event_stat(area_t * cc, const signal_entry_t * se) {
     return 0;
 }
 
-static int do_write_file(const context_content_t * cc, const area_t * a) {
+static int do_write_file(const context_content_t * cc, const area_t * a)
+{
     char line[LEN_LINE];
     int  len = 0;
     memset(line, 0, LEN_LINE);
@@ -262,17 +274,15 @@ static int do_write_file(const context_content_t * cc, const area_t * a) {
     return 0;
 }
 
-static int write_context(const context_content_t * content,
-                         const area_t * area) {
+static int write_context(const context_content_t * content, const area_t * area)
+{
     return do_write_file(content, area);
 }
 
-static int format_context(const context_content_t * c,
-                          const area_t * a,
-                          char * line) {
+static int format_context(const context_content_t * c, const area_t * a, char * line)
+{
     int ret = 0;
-    char time_laop[27], time_lacl[27],
-         time_come[37], time_leav[27];
+    char time_laop[27], time_lacl[27], time_come[37], time_leav[27];
 
     time_format(a->last_open_time,  time_laop);
     time_format(a->last_close_time, time_lacl);
@@ -292,7 +302,8 @@ static int format_context(const context_content_t * c,
     return ret;
 }
 
-int fmt_output_timestamp(const time_t t, char * line) {
+int fmt_output_timestamp(const time_t t, char * line)
+{
     struct tm tp;
     if (t != 0) {
         localtime_r(&t, &tp);
@@ -301,7 +312,8 @@ int fmt_output_timestamp(const time_t t, char * line) {
     return 0;
 }
 
-int time_format(const time_t t, char * line) {
+int time_format(const time_t t, char * line)
+{
     struct tm tp;
     if (t > 0) {
         localtime_r(&t, &tp);
@@ -454,7 +466,8 @@ int check_hourly_update(time_t t)
     return 0;
 }
 
-int daily_cleanup(time_t t) {
+int daily_cleanup(time_t t)
+{
     static const int sec_in_day = 24 * 3600;
     int i = 0, j = 0;
     int cleaned_user = 0, cleaned_area = 0;
@@ -467,14 +480,18 @@ int daily_cleanup(time_t t) {
     // wait context thread
     wait_context_thread();
 
-    for (i = 0; i < context.part; i++) {
+    for (i = 0; i < context.part; i++)
+   	{
         ch = &context.contexts[i];
-        for (j = 0; j < ch->size; j++) {
+        for (j = 0; j < ch->size; j++)
+	   	{
             cc = &ch->content[j];
             c_prev = NULL;
-            while (cc && cc->imsi[0]) {
+            while (cc && cc->imsi[0])
+		   	{
                 area_t ** parea = NULL;
-                for (parea = &cc->areas; *parea; ) {
+                for (parea = &cc->areas; *parea; )
+			   	{
                     if (t - (*parea)->last_event_time > sec_in_day) {
                         // area timeout!!
                         cc->num_of_area --;

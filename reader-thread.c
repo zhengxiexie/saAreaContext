@@ -14,7 +14,8 @@
 #include "reader-thread.h"
 #include "comsumer-thread.h"
 
-typedef struct _file_info_t {
+typedef struct file_info_t_tag
+{
     char filename[256];
 } file_info_t;
 
@@ -39,11 +40,13 @@ static int init_sort_buffer();
 static int time_format(const time_t t, char * line);
 static void sigusr1_handler(int signo);
 
-static int file_list_comp(const void * f1, const void * f2) {
+static int file_list_comp(const void * f1, const void * f2)
+{
     return strcmp(((file_info_t*)f1)->filename, ((file_info_t*)f2)->filename);
 }
 
-static int comp_signal_func(const void * se1, const void * se2) {
+static int comp_signal_func(const void * se1, const void * se2)
+{
     return ((signal_entry_t*)se1)->timestamp - ((signal_entry_t*)se2)->timestamp;
 }
 
@@ -89,9 +92,8 @@ void * read_file_thread(void * data)
 
     logmsg(stdout, "Reading thread started.");
 
-    logmsg(stdout, "Memory alloc detail:");
-
-    malloc_stats();
+    /*logmsg(stdout, "Memory alloc detail:");*/
+    /*malloc_stats();*/
 
     while (1)
    	{
@@ -153,7 +155,8 @@ void * read_file_thread(void * data)
             rfile = fopen(read_filename, "r");
             while (read_line(rfile, file_line, 1024) != NULL)
 		   	{
-                if (parse_line(file_line, &se)) continue;
+                if (parse_line(file_line, &se))
+				   	continue;
                 push_to_sort_buf(&se);
             }
 
@@ -210,7 +213,8 @@ retry:
     return NULL;
 }
 
-static int push_to_sort_buf(signal_entry_t * se) {
+static int push_to_sort_buf(signal_entry_t * se)
+{
     time_t min = se->timestamp / 60;
     int slot = min % CFG(sort_min);
     int i  = 0;
@@ -223,20 +227,27 @@ static int push_to_sort_buf(signal_entry_t * se) {
         return 0;
     }
 
-    if (context_sort_buf[slot].time < min) {
+    if (context_sort_buf[slot].time < min)
+   	{
         signal_current = min;
         // need push sort buffer to context thread
-        for (i = 0; i < CFG(sort_min) ; i++) {
+        for (i = 0; i < CFG(sort_min) ; i++)
+	   	{
             ps = (i + slot + 1) % CFG(sort_min);
-            if (context_sort_buf[ps].time > context_sort_buf[slot].time) continue;
-            if (context_sort_buf[ps].time == -1) continue;
+            if (context_sort_buf[ps].time > context_sort_buf[slot].time)
+				continue;
+            if (context_sort_buf[ps].time == -1)
+			   	continue;
+
             // we need to push this sort buffer into context
-            logmsg(stdout, "Push [%d] record to context, timestamp: %d",
+            logdbg(stdout, "Push [%d] record to context, timestamp: %d",
                    context_sort_buf[ps].used, context_sort_buf[ps].time);
+
             // check hourly update when needed
             check_hourly_update(context_sort_buf[ps].time * 60);
             // daily cleanup?
-            if (((context_sort_buf[ps].time * 60 + CFG(tz_offset)) / 60 - CFG(cleanup_min)) / 60 % 24 == CFG(cleanup_hour)) {
+            if (((context_sort_buf[ps].time * 60 + CFG(tz_offset)) / 60 - CFG(cleanup_min)) / 60 % 24 == CFG(cleanup_hour))
+		   	{
                 if (need_daily_cleanup == 1) {
                     logmsg(stdout, "cleanup started");
                     ret = daily_cleanup(context_sort_buf[ps].time * 60);
@@ -249,10 +260,13 @@ static int push_to_sort_buf(signal_entry_t * se) {
             } else {
                 need_daily_cleanup = 1;
             }
+
             // do the sort.
             qsort(context_sort_buf[ps].buffer, context_sort_buf[ps].used, sizeof(context_content_t), comp_signal_func);
+
             // push to context
             push_to_context(&context_sort_buf[ps]);
+
             // reset sort buffer
             context_sort_buf[ps].used = 0;
             context_sort_buf[ps].time = -1;
@@ -270,8 +284,7 @@ static int push_to_sort_buf(signal_entry_t * se) {
         return 0;
     }
 
-    memcpy(&context_sort_buf[slot].buffer[context_sort_buf[slot].used],
-            se, sizeof(context_content_t));
+    memcpy(&context_sort_buf[slot].buffer[context_sort_buf[slot].used], se, sizeof(context_content_t));
 
     context_sort_buf[slot].used += 1;
 
@@ -279,13 +292,15 @@ static int push_to_sort_buf(signal_entry_t * se) {
     return 0;
 }
 
-static int push_to_context(context_sort_buffer_t * csb) {
+static int push_to_context(context_sort_buffer_t * csb)
+{
     int cidx = 0, pushed  = 0, to_push = 0;
     int num = csb->used;
     signal_entry_t * ses = csb->buffer;
     context_thread_t * ct;
 
-    while (pushed < num) {
+    while (pushed < num)
+   	{
         // get num of context to push
         ct = &context_thread[cidx];
 #define _DO_PUSH(st, pnum) do { \
@@ -294,18 +309,16 @@ static int push_to_context(context_sort_buffer_t * csb) {
     pushed   += to_push; \
     ct->used += to_push; \
 } while(0)
+
         pthread_mutex_lock(&ct->mutex);
         if (ct->read + ct->used < CONTEXT_BUF_CACHED) {
-            //      |------****USED****------|
-            //       ^- 2. then here   ^- 1. start here
             _DO_PUSH(ct->read + ct->used, CONTEXT_BUF_CACHED - ct->read - ct->used);
             _DO_PUSH(0, ct->read);
         } else {
-            // |***USED***---------***USED***|
-            //            ^- start here
             _DO_PUSH(ct->read + ct->used - CONTEXT_BUF_CACHED, CONTEXT_BUF_CACHED - ct->used);
         }
 #undef _DO_PUSH
+
         pthread_mutex_unlock(&ct->mutex);
         pthread_cond_signal(&ct->pushed);
         cidx = (cidx + 1) % CFG(context_thread);
@@ -314,7 +327,8 @@ static int push_to_context(context_sort_buffer_t * csb) {
     return 0;
 }
 
-static char * read_line(FILE * f, char * line, size_t byte) {
+static char * read_line(FILE * f, char * line, size_t byte)
+{
     char * ret = fgets(line, byte, f);
     int  i = 0;
     if (!ret) return NULL;
@@ -326,14 +340,16 @@ static char * read_line(FILE * f, char * line, size_t byte) {
     return ret;
 }
 
-static int check_exit_flag() {
+static int check_exit_flag()
+{
     FILE * exit_f;
     exit_f = fopen(g_exitflag_file, "r");
     if (exit_f) fclose(exit_f);
     return exit_f? 1: 0;
 }
 
-static int init_sort_buffer() {
+static int init_sort_buffer()
+{
     int flag = 0;
     int size = 0;
     int i = 0;
@@ -343,7 +359,8 @@ static int init_sort_buffer() {
     context_sort_buf = (context_sort_buffer_t *)malloc(size);
     size = CFG(sort_buffer) * sizeof(context_content_t);
     flag = 0;
-    for (i = 0; i < CFG(sort_min); i++) {
+    for (i = 0; i < CFG(sort_min); i++)
+   	{
         context_sort_buf[i].size   = CFG(sort_buffer);
         context_sort_buf[i].time   = -1;
         context_sort_buf[i].used   = 0;
@@ -365,21 +382,24 @@ static int init_sort_buffer() {
 }
 
 // write buffer back to
-static int write_back_context() {
+static int write_back_context()
+{
     int i = 0, j = 1, l = 0;
     signal_entry_t * se = NULL;
     FILE * wfile = NULL;
     char line[256];
     char filename[256];
 
-    for (i = 0; i < CFG(sort_min); i++) {
+    for (i = 0; i < CFG(sort_min); i++)
+   	{
         if (context_sort_buf[i].time == -1) continue;
         // filename
         snprintf(filename, 255, "%s/%s_%d",
             CFG(read_dir), "00_wb", (int)context_sort_buf[i].time);
         logmsg(stdout, "Write back contect to file %s", filename);
         wfile = fopen(filename, "w");
-        for (j = 0; j < context_sort_buf[i].used; j++) {
+        for (j = 0; j < context_sort_buf[i].used; j++)
+	   	{
             se = &context_sort_buf[i].buffer[j];
             l = write_back_format(se, line);
             fwrite(line, l, 1, wfile);
@@ -390,7 +410,8 @@ static int write_back_context() {
     return 0;
 }
 
-static int write_back_format(const signal_entry_t * c, char * line) {
+static int write_back_format(const signal_entry_t * c, char * line)
+{
     char tmp_time[27];
     int ret = 0;
     char lac_cell[12];
@@ -409,7 +430,8 @@ static int write_back_format(const signal_entry_t * c, char * line) {
     return ret;
 }
 
-static int time_format(const time_t t, char * line) {
+static int time_format(const time_t t, char * line)
+{
     struct tm tp;
     if (t > 0) {
         localtime_r(&t, &tp);
@@ -420,7 +442,8 @@ static int time_format(const time_t t, char * line) {
     return 0;
 }
 
-static void sigusr1_handler(int signo) {
+static void sigusr1_handler(int signo)
+{
     signal(SIGUSR1, sigusr1_handler);
     logmsg(stdout, "SIGUSR1 caught, area_cell_map will reload on next file");
     need_update_area_cell_map = 1;
