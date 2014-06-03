@@ -204,6 +204,7 @@ void * read_file_thread(void * data)
         // free allocted resource
         free(file_list);
 retry:
+		logmsg(stdout, "Now sleep[%d] seconds", CFG(sleep_interval));
         sleep(CFG(sleep_interval));
     }
     return NULL;
@@ -274,8 +275,7 @@ static int push_to_sort_buf(signal_entry_t * se) {
 
     context_sort_buf[slot].used += 1;
 
-    //printf("push %s to %d, used: %d/%d, addr: %Lu\n", se->imsi, slot, context_sort_buf[slot].used, CFG(sort_buffer),
-    //        &context_sort_buf[slot].buffer[context_sort_buf[slot].used - 1]);
+	logmsg( stdout, "push[%s] to signal_sort_buf[%d], used[%d/%d]\n", se->imsi, slot, context_sort_buf[slot].used, CFG(sort_buffer) );
     return 0;
 }
 

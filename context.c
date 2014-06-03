@@ -127,6 +127,7 @@ int update_context(signal_entry_t * se) {
     new_area_tmp->next = (x); \
     do_update_event_stat(new_area_tmp, se); \
     (x) = new_area_tmp; \
+	logmsg(stdout, "Insert a new context_content_t area_id[%s] come_time[%d] last_event_time[%d] last_event_type[%d]", new_area_tmp->area_id);\
 } while (0)
 
 static
@@ -256,7 +257,7 @@ static int do_write_file(const context_content_t * cc, const area_t * a) {
     len = format_context(cc, a, line);
     if (!output_info.output) output_info.output = fopen(CFG(tmp_filename), "a");
     // according to POSIX standard, fwrite is atomic, therefore no lock is needed.
-    //printf("out line: %s", line);
+	printf("out line: %s", line);
     fwrite(line, len, 1, output_info.output);
     return 0;
 }

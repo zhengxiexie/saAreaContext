@@ -11,7 +11,7 @@
 #define CONTEXT_SORT_BASESIZE (100000ul)
 #define CONTEXT_PART (10)
 #define CFG(x) (g_config._##x)
-#define NUM_OF_FIELD (5)
+#define NUM_OF_FIELD (7)
 
 export_decode(imsi);
 export_decode(timestamp);
