@@ -231,7 +231,7 @@ static int push_to_sort_buf(signal_entry_t * se) {
             if (context_sort_buf[ps].time > context_sort_buf[slot].time) continue;
             if (context_sort_buf[ps].time == -1) continue;
             // we need to push this sort buffer into context
-            logmsg(stdout, "Push to %d record to context, timestamp: %d",
+            logmsg(stdout, "Push [%d] record to context, timestamp: %d",
                    context_sort_buf[ps].used, context_sort_buf[ps].time);
             // check hourly update when needed
             check_hourly_update(context_sort_buf[ps].time * 60);
@@ -275,7 +275,7 @@ static int push_to_sort_buf(signal_entry_t * se) {
 
     context_sort_buf[slot].used += 1;
 
-	logmsg( stdout, "push[%s] to signal_sort_buf[%d], used[%d/%d]\n", se->imsi, slot, context_sort_buf[slot].used, CFG(sort_buffer) );
+	logdbg( stdout, "push[%s] to signal_sort_buf[%d], used[%d/%d]\n", se->imsi, slot, context_sort_buf[slot].used, CFG(sort_buffer) );
     return 0;
 }
 
