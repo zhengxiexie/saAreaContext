@@ -221,9 +221,15 @@ static int push_to_sort_buf(signal_entry_t * se)
     int ps = 0;
     int ret = 0;
 
+	char time_str[20], time_now[20];
+	memset(time_str, 0, sizeof(time_str));
+	memset(time_now, 0, sizeof(time_now));
+	timestamp_str( signal_current*60, time_str );
+	timestamp_str( se->timestamp, time_now );
+
     // discard timeout record
     if (min <= signal_current - CFG(sort_min)) {
-        logmsg(stderr, "Discard record due to latency, imsi: %s, time %d", se->imsi, se->timestamp);
+        logmsg(stderr, "Discard record due to latency. imsi[%s] signal_current[%s] time_now[%s] latency[%d]", se->imsi, time_str, time_now,  min-signal_current);
         return 0;
     }
 

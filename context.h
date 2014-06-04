@@ -62,4 +62,7 @@ int init_context();
 int daily_cleanup(time_t t);
 int read_cell_map(const char * filename);
 
+void str_timestamp( const char * str, time_t * tm );
+void timestamp_str( const time_t t, char * str );
+
 #endif /* __CONTEXT_H__ */

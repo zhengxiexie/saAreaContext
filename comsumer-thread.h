@@ -7,7 +7,7 @@
 #include <pthread.h>
 #include "reader-thread.h"
 
-typedef struct _context_thread_t {
+typedef struct context_thread_t_tag {
     pthread_t tid;
     pthread_mutex_t mutex;
     pthread_cond_t  pushed;

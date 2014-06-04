@@ -413,37 +413,42 @@ int hourly_update_context(time_t time)
 int parse_line(const char * line, signal_entry_t * se)
 {
     int pos = 0;
-    char * word[15];
-    char line_tmp[LEN_LINE];
-    int  w_idx = 0;
-    struct tm tmp_tm;
+    char  word[15][1024];
+	int i=0;
+	for( ; i<15; i++ ) {
+		memset(word[i], 0, 1024);
+	}
 
-    strcpy(line_tmp, line);
-    word[w_idx++] = line_tmp;
-    while (line[pos]) {
-        if (line[pos] == ',') {
-            line_tmp[pos++] = '\0';
-            word[w_idx++] = line_tmp + pos;
-        }
-        line_tmp[pos] = line[pos];
-        pos++;
+    int  word_index = 0, letter_index = 0;
+	/*struct tm tmp_tm;*/
+	time_t tmp_tm;
+
+    while (line[pos])
+   	{
+        if (line[pos] == ',')
+	   	{
+            word[word_index][letter_index] = '\0';
+			word_index++;
+			letter_index=0;
+		}else{
+			word[word_index][letter_index] = line[pos];
+			letter_index++;
+		}
+		pos++;
     }
 
     // ckeck num of field
-    if (w_idx != NUM_OF_FIELD && w_idx != NUM_OF_FIELD + 1) {
-        logmsg(stderr, "Wrong num of field, need %d, got %d, line: %s", NUM_OF_FIELD, w_idx, line);
+    if (word_index != NUM_OF_FIELD && word_index != NUM_OF_FIELD + 1) {
+        logmsg(stderr, "Wrong num of field, need %d, got %d, line: %s", NUM_OF_FIELD, word_index, line);
         return 1;
     }
 
-    // update se
-    // imsi
     strcpy(se->imsi, word[decode(imsi)]);
-    // lac_cell
     sprintf(se->lac_cell, "%s-%s", word[decode(lac)], word[decode(cell)]);
-    // timestamp: char[] to time_t
-    strptime(word[decode(timestamp)], "%Y-%m-%d %H:%M:%S", &tmp_tm);
-    se->timestamp = mktime(&tmp_tm);
-    // event, char[] => uint16_t
+	/*strptime(word[decode(timestamp)], "%Y-%m-%d %H:%M:%S", &tmp_tm);*/
+	/*se->timestamp = mktime(&tmp_tm);*/
+	str_timestamp(word[decode(timestamp)], &tmp_tm);
+	se->timestamp = tmp_tm;
     se->event = atoi(word[decode(event_type)]);
     return 0;
 }
@@ -765,4 +770,19 @@ static int find_area_id(const char * lac_cell, area_cell_map_t ** start)
         *start = NULL;
         return 0;
     }
+}
+
+void str_timestamp( const char * str, time_t * tm )
+{
+	struct tm tmp_tm;
+	strptime(str, "%Y-%m-%d %H:%M:%S", &tmp_tm);
+	*tm = mktime(&tmp_tm);
+}
+
+void timestamp_str( const time_t t, char * str )
+{
+	struct tm * timeinfo;
+
+	timeinfo = localtime(&t);
+	strftime(str, 80, "%Y-%m-%d %H:%M:%S", timeinfo);
 }
