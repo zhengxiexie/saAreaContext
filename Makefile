@@ -1,5 +1,5 @@
 CC      = gcc
-CFLAGS  = -O2 -m64 -g -D_THREAD_SAFE_ -D_REENTRANT_ -Werror -Wall -D_DEBUG
+CFLAGS  = -O2 -m64 -g -D_THREAD_SAFE_ -D_REENTRANT_ -Werror -Wall# -D_DEBUG
 LDFLAGS = -O2 -m64 -g -lpthread
 
 OBJECTS = config.o context.o reader-thread.o main.o comsumer-thread.o log.o

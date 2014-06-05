@@ -207,7 +207,7 @@ void * read_file_thread(void * data)
         // free allocted resource
         free(file_list);
 retry:
-		logmsg(stdout, "Now sleep[%d] seconds", CFG(sleep_interval));
+		logdbg(stdout, "Now sleep[%d] seconds", CFG(sleep_interval));
         sleep(CFG(sleep_interval));
     }
     return NULL;
@@ -229,7 +229,7 @@ static int push_to_sort_buf(signal_entry_t * se)
 
     // discard timeout record
     if (min <= signal_current - CFG(sort_min)) {
-        logmsg(stderr, "Discard record due to latency. imsi[%s] signal_current[%s] time_now[%s] latency[%d]", se->imsi, time_str, time_now,  min-signal_current);
+        logdbg(stderr, "Discard record due to latency. imsi[%s] signal_current[%s] time_now[%s] latency[%d]", se->imsi, time_str, time_now,  min-signal_current);
         return 0;
     }
 
