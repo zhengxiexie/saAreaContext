@@ -272,7 +272,7 @@ static int do_write_file(const context_content_t * cc, const area_t * a)
     len = format_context(cc, a, line);
     if (!output_info.output) output_info.output = fopen(CFG(tmp_filename), "a");
     // according to POSIX standard, fwrite is atomic, therefore no lock is needed.
-	printf("out line: %s", line);
+	logdbg(stdout, "out line: %s", line);
     fwrite(line, len, 1, output_info.output);
     return 0;
 }
