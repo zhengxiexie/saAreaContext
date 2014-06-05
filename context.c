@@ -124,14 +124,17 @@ int update_context(signal_entry_t * se)
 }
 
 #define APPEND_NEW_AREA(x, se, a) do { \
+	char time_tmp1[20], time_tmp2[20]; \
     area_t * new_area_tmp = (area_t*)calloc(1, sizeof(area_t)); \
     strcpy(new_area_tmp->area_id, (a)); \
     new_area_tmp->come_time       = (se)->timestamp; \
+	timestamp_str( new_area_tmp->come_time, time_tmp1 ); \
     new_area_tmp->last_event_time = (se)->timestamp; \
+	timestamp_str( new_area_tmp->last_event_time, time_tmp2 ); \
     new_area_tmp->next = (x); \
     do_update_event_stat(new_area_tmp, se); \
     (x) = new_area_tmp; \
-	logmsg(stdout, "Insert a new context_content_t area_id[%s] come_time[%d] last_event_time[%d] last_event_type[%d]", new_area_tmp->area_id);\
+	logmsg(stdout, "Insert a new context_content_t area_id[%s] come_time[%s] last_event_time[%s]", new_area_tmp->area_id, time_tmp1, time_tmp2 );\
 } while (0)
 
 static int do_update_context(context_content_t * cc, const signal_entry_t * se)
