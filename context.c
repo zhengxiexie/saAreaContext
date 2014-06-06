@@ -134,7 +134,7 @@ int update_context(signal_entry_t * se)
     new_area_tmp->next = (x); \
     do_update_event_stat(new_area_tmp, se); \
     (x) = new_area_tmp; \
-	logdbg(stdout, "Insert a new context_content_t area_id[%s] come_time[%s] last_event_time[%s]", new_area_tmp->area_id, time_tmp1, time_tmp2 );\
+	logdbg(stdout, "Insert a new context_content_t imsi[%s] area_id[%s] come_time[%s] i[%d] num_of_area[%d]", se->imsi, new_area_tmp->area_id, time_tmp1, i, num_of_area );\
 } while (0)
 
 static int do_update_context(context_content_t * cc, const signal_entry_t * se)
@@ -463,7 +463,7 @@ int check_hourly_update(time_t t)
     // time
     if (output_info.filename_ts == -1) output_info.filename_ts = rd_t;
 #ifdef __DEBUG__
-    printf("%d, %d, %d\n", t, rd_t, output_info.filename_ts);
+    printf("%d, %d, %d\n", (int)t, (int)rd_t, (int)output_info.filename_ts);
 #endif
     // need hourly update
     if (rd_t != output_info.filename_ts) {

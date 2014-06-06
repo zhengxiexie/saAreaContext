@@ -129,7 +129,7 @@ void * read_file_thread(void * data)
                 file_info_t * tmp_list;
                 max_num_file *= 2;
                 tmp_list  = file_list;
-                file_list = (file_info_t*)calloc(max_num_file, sizeof(max_num_file));
+                file_list = (file_info_t*)calloc(max_num_file, sizeof(file_info_t));
                 memcpy(file_list, tmp_list, sizeof(file_info_t) * num_of_file);
                 free(tmp_list);
             }
@@ -229,7 +229,7 @@ static int push_to_sort_buf(signal_entry_t * se)
 
     // discard timeout record
     if (min <= signal_current - CFG(sort_min)) {
-        logdbg(stderr, "Discard record due to latency. imsi[%s] signal_current[%s] time_now[%s] latency[%d]", se->imsi, time_str, time_now,  min-signal_current);
+        /*logdbg(stderr, "Discard record due to latency. imsi[%s] signal_current[%s] time_now[%s] latency[%d]", se->imsi, time_str, time_now,  min-signal_current);*/
         return 0;
     }
 
