@@ -219,7 +219,8 @@ static int do_new_context(context_content_t * cc, const signal_entry_t * se)
     } else {
         // prefix a new node
         tmp_cc = (context_content_t*)calloc(1, sizeof(context_content_t));
-        tmp_cc->next = cc;
+		/*tmp_cc->next = cc;*/
+		tmp_cc->next = NULL;
         cc->next = tmp_cc;
     }
     strcpy(tmp_cc->imsi, se->imsi);
@@ -228,7 +229,8 @@ static int do_new_context(context_content_t * cc, const signal_entry_t * se)
     tmp_cc->num_of_area = num_of_area;
     for (i = 0; i < num_of_area; i++)
    	{
-        APPEND_NEW_AREA(cc->areas, se, map[i].area_id);
+        /*APPEND_NEW_AREA(cc->areas, se, map[i].area_id);*/
+		APPEND_NEW_AREA(tmp_cc->areas, se, map[i].area_id);
     }
     return 0;
 }
@@ -270,7 +272,11 @@ static int do_write_file(const context_content_t * cc, const area_t * a)
 
     // format Context to line
     len = format_context(cc, a, line);
-    if (!output_info.output) output_info.output = fopen(CFG(tmp_filename), "a");
+
+	if (!output_info.output) {
+		output_info.output = fopen(CFG(tmp_filename), "a");
+	}
+
     // according to POSIX standard, fwrite is atomic, therefore no lock is needed.
 	logdbg(stdout, "out line: %s", line);
     fwrite(line, len, 1, output_info.output);
@@ -343,6 +349,7 @@ int hourly_update_context(time_t time)
     for (i = 0; i < context.part; i++)
    	{
         pthread_mutex_lock(&context.contexts[i].mutex_lock);
+		logdbg(stdout, "contexts[%d] is locked.", i);
     }
 
     for (i = 0; i < context.part; i++)
@@ -354,9 +361,7 @@ int hourly_update_context(time_t time)
 		   	{
                 area_t * area = NULL;
                 total_in_context++;
-                for (k = 0, area = cc->areas;
-                     k < cc->num_of_area;
-                     k++, area = area->next)
+                for (k = 0, area = cc->areas; k < cc->num_of_area && area; k++, area = area->next)
 			   	{
                     total_area ++;
                     time_t ps = MAX(time - CFG(output_interval), area->come_time);
@@ -368,36 +373,41 @@ int hourly_update_context(time_t time)
                     area->called_call_counts  = 0;
                     area->smo_sms_counts      = 0;
                     area->smt_sms_counts      = 0;
+
+					logdbg(stdout, "contexts[%d] content[%d] areas[%d] is hourly updated.", i, j, k);
                 }
             }
         }
     }
 
     // switch to new file
-    if (output_info.output) {
+    if (output_info.output)
+   	{
         fflush(output_info.output);
         fclose(output_info.output);
     }
+
     fmt_output_timestamp(output_info.filename_ts / CFG(output_interval) * CFG(output_interval), output_timestamp);
+
     // trim min if CFG(output_interval) is multiply of 3600
-    if (CFG(output_interval) % 3600 == 0) output_timestamp[10] = '\0';
+    if (CFG(output_interval) % 3600 == 0)
+	   	output_timestamp[10] = '\0';
+
     // trim hour if daily output
-    if (CFG(output_interval) % (24 * 3600) == 0) output_timestamp[8] = '\0';
-    sprintf(output_info.filename, "%s/%s%s%s",
-                CFG(output_dir),
-                CFG(output_prefix),
-                output_timestamp,
-                CFG(output_suffix));
+    if (CFG(output_interval) % (24 * 3600) == 0)
+	   	output_timestamp[8] = '\0';
 
-    logmsg(stdout, "Output File: %s, Context: %d, area: %d",
-           output_info.filename, total_in_context, total_area);
+    sprintf(output_info.filename, "%s/%s%s%s", CFG(output_dir), CFG(output_prefix), output_timestamp, CFG(output_suffix));
 
-    if (CFG(cross_mountpoint)) {
+    logmsg(stdout, "Output File: %s, Context: %d, area: %d", output_info.filename, total_in_context, total_area);
+
+    if (CFG(cross_mountpoint))
+   	{
         // using mv to move file, rename() cannot handle
         // moving a file cross mount points
         char cmd_buffer[1024];
         sprintf(cmd_buffer, "mv \'%s\' \'%s\'", CFG(tmp_filename), output_info.filename);
-        logmsg(stdout, "Ecec shell cmd: %s", cmd_buffer);
+        logmsg(stdout, "Exec shell cmd: %s", cmd_buffer);
         system(cmd_buffer);
     } else {
         logmsg(stdout, "Moving %s to %s", CFG(tmp_filename), output_info.filename);
@@ -405,10 +415,14 @@ int hourly_update_context(time_t time)
     }
 
     output_info.output = fopen(CFG(tmp_filename), "a");
+
     // unlock all context
-    for (i = 0; i < context.part; i++) {
+    for (i = 0; i < context.part; i++)
+   	{
         pthread_mutex_unlock(&context.contexts[i].mutex_lock);
+		logdbg(stdout, "contexts[%d] is opened.", i);
     }
+
     output_info.filename_ts = time;
     return 0;
 }
@@ -460,14 +474,26 @@ int check_hourly_update(time_t t)
 {
     time_t rd_t = (t + CFG(tz_offset)) / CFG(output_interval) * CFG(output_interval) - CFG(tz_offset);
 
+	char t_str[20], rd_str[20], filename_ts_str[20];
+    timestamp_str( t, t_str );
+    timestamp_str( rd_t, rd_str );
+
     // time
-    if (output_info.filename_ts == -1) output_info.filename_ts = rd_t;
+    if (output_info.filename_ts == -1)
+	   	output_info.filename_ts = rd_t;
+
+    timestamp_str( output_info.filename_ts, filename_ts_str );
+
 #ifdef __DEBUG__
-    printf("%d, %d, %d\n", (int)t, (int)rd_t, (int)output_info.filename_ts);
+    /*logdbg(stdout, "%d, %d, %d\n", (int)t, (int)rd_t, (int)output_info.filename_ts);*/
+	logdbg(stdout, "%s, %s, %s\n", t_str, rd_str, filename_ts_str);
 #endif
+
     // need hourly update
-    if (rd_t != output_info.filename_ts) {
-        logmsg(stdout, "Hourly update: %d -> %d", rd_t, output_info.filename_ts);
+    if (rd_t != output_info.filename_ts)
+   	{
+        /*logmsg(stdout, "Hourly update: %d -> %d", rd_t, output_info.filename_ts);*/
+		logmsg(stdout, "Hourly update: %s -> %s", rd_str, filename_ts_str);
         // need switch file name
         hourly_update_context(rd_t);
     }
@@ -500,47 +526,64 @@ int daily_cleanup(time_t t)
                 area_t ** parea = NULL;
                 for (parea = &cc->areas; *parea; )
 			   	{
-                    if (t - (*parea)->last_event_time > sec_in_day) {
+                    if (t - (*parea)->last_event_time > sec_in_day)
+				   	{
                         // area timeout!!
                         cc->num_of_area --;
                         cleaned_area ++;
-                        (*parea)->resident_time = (1 - CFG(cleanup_mark))
-                            * (t - MAX(t - CFG(output_interval), (*parea)->come_time));
+                        (*parea)->resident_time = (1 - CFG(cleanup_mark)) * (t - MAX(t - CFG(output_interval), (*parea)->come_time));
                         if (CFG(cleanup_mark)) write_context(cc, *parea);
                         area_t * to_be_free = *parea;
                         parea = &(*parea)->next;
                         if (to_be_free) free(to_be_free);
+						logmsg(stdout, "contexts[%d] content[%d] area[%p] freed.", i, j, to_be_free);
                     } else {
                         parea = &(*parea)->next;
                     }
                 }
 
                 // if user still in at least 1 area, leave it be
-                if (cc->num_of_area) continue;
+				/*if( cc->num_of_area ) continue;*/
+				if (cc->num_of_area){
+					cc = cc->next;
+					continue;
+				}
 
                 cleaned_user++;
-                if (c_prev == NULL) {
 
-                    // remove first node
-                    if (!c_next) {
-                        // next is null
-                        memset(cc, 0, sizeof(context_content_t));
-                    } else {
-                        memcpy(cc, c_next, sizeof(context_content_t));
-                        free(c_next);
-                    }
-                } else {
-                    c_prev->next = cc->next;
-                    free(cc);
-                    cc = c_prev->next;
-                }
+                /*if (c_prev == NULL)*/
+				   /*{*/
+                    /*// remove first node*/
+                    /*if (!c_next) {*/
+                        /*// next is null*/
+                        /*memset(cc, 0, sizeof(context_content_t));*/
+                    /*} else {*/
+                        /*memcpy(cc, c_next, sizeof(context_content_t));*/
+                        /*free(c_next);*/
+                    /*}*/
+                /*} else {*/
+                    /*c_prev->next = cc->next;*/
+                    /*free(cc);*/
+                    /*cc = c_prev->next;*/
+                /*}*/
+
+				c_next = cc->next;
+
+				if (!c_next) {
+					memset(cc, 0, sizeof(context_content_t));
+					cc = cc->next;
+				} else {
+					memcpy(cc, c_next, sizeof(context_content_t));
+					logmsg(stdout, "contexts[%d] content[%d] next[%p] freed.", i, j, c_next);
+					free(c_next);
+				}
             }
         }
     }
 
     logmsg(stdout, "%d user, %d area cleaned", cleaned_user, cleaned_area);
-    logmsg(stdout, "Memory alloc detail:");
-    malloc_stats();
+    /*logmsg(stdout, "Memory alloc detail:");*/
+    /*malloc_stats();*/
 
     return 0;
 }
@@ -707,7 +750,7 @@ int read_cell_map(const char * filename)
         fseek(map_file, 0, SEEK_SET);
 
         // free old area_cell_map
-        if (area_cell_map) free(area_cell_map);
+        /*if (area_cell_map) free(area_cell_map);*/
         num_of_area_cell_map = 0;
 
         // alloc new area_cell_map

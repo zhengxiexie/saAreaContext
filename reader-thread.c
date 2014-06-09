@@ -228,7 +228,8 @@ static int push_to_sort_buf(signal_entry_t * se)
 	timestamp_str( se->timestamp, time_now );
 
     // discard timeout record
-    if (min <= signal_current - CFG(sort_min)) {
+    if (min <= signal_current - CFG(sort_min))
+   	{
         /*logdbg(stderr, "Discard record due to latency. imsi[%s] signal_current[%s] time_now[%s] latency[%d]", se->imsi, time_str, time_now,  min-signal_current);*/
         return 0;
     }
@@ -236,6 +237,7 @@ static int push_to_sort_buf(signal_entry_t * se)
     if (context_sort_buf[slot].time < min)
    	{
         signal_current = min;
+
         // need push sort buffer to context thread
         for (i = 0; i < CFG(sort_min) ; i++)
 	   	{
@@ -246,19 +248,22 @@ static int push_to_sort_buf(signal_entry_t * se)
 			   	continue;
 
             // we need to push this sort buffer into context
-            logdbg(stdout, "Push [%d] record to context, timestamp: %d",
-                   context_sort_buf[ps].used, context_sort_buf[ps].time);
+			char pushed_time[20], now_time[20];
+			timestamp_str( context_sort_buf[ps].time * 60, pushed_time );
+			timestamp_str( signal_current * 60, now_time );
+            logdbg(stdout, "Push context_sort_buf[%d]'s [%d] records to context, now_time[%s] pushed_time[%s]", ps, context_sort_buf[ps].used, now_time, pushed_time);
 
             // check hourly update when needed
             check_hourly_update(context_sort_buf[ps].time * 60);
+
             // daily cleanup?
             if (((context_sort_buf[ps].time * 60 + CFG(tz_offset)) / 60 - CFG(cleanup_min)) / 60 % 24 == CFG(cleanup_hour))
 		   	{
-                if (need_daily_cleanup == 1) {
+                if (need_daily_cleanup == 1)
+			   	{
                     logmsg(stdout, "cleanup started");
                     ret = daily_cleanup(context_sort_buf[ps].time * 60);
-                    logmsg(stdout, "Updateing area_cell_map from %s",
-                                   CFG(area_cell_map));
+                    logmsg(stdout, "Updateing area_cell_map from %s", CFG(area_cell_map));
                     ret = read_cell_map(CFG(area_cell_map));
                     logmsg(stdout, "%d map loaded", ret);
                 }
@@ -279,13 +284,15 @@ static int push_to_sort_buf(signal_entry_t * se)
         }
     }
 
-    if (context_sort_buf[slot].time == -1) {
+    if (context_sort_buf[slot].time == -1)
+   	{
         // new minute
         context_sort_buf[slot].time = min;
         context_sort_buf[slot].used = 0;
     }
 
-    if (context_sort_buf[slot].used == CFG(sort_buffer)) {
+    if (context_sort_buf[slot].used == CFG(sort_buffer))
+   	{
         logmsg(stderr, "Sort Buffer Full, please check.");
         return 0;
     }
@@ -294,13 +301,14 @@ static int push_to_sort_buf(signal_entry_t * se)
 
     context_sort_buf[slot].used += 1;
 
-	logdbg( stdout, "push[%s] to signal_sort_buf[%d], used[%d/%d]\n", se->imsi, slot, context_sort_buf[slot].used, CFG(sort_buffer) );
+	logdbg( stdout, "push[%s] to context_sort_buf[%d] buffer[%d]\n", se->imsi, slot, context_sort_buf[slot].used -1 );
     return 0;
 }
 
 static int push_to_context(context_sort_buffer_t * csb)
 {
-    int cidx = 0, pushed  = 0, to_push = 0;
+	// pushed 标示context_sort_buf中buffer已push的位置
+    int cidx = 0, pushed = 0, to_push = 0;
     int num = csb->used;
     signal_entry_t * ses = csb->buffer;
     context_thread_t * ct;
@@ -309,23 +317,29 @@ static int push_to_context(context_sort_buffer_t * csb)
    	{
         // get num of context to push
         ct = &context_thread[cidx];
+
 #define _DO_PUSH(st, pnum) do { \
     to_push = MIN(num - pushed, pnum); \
     memcpy(&ct->buf[st], &ses[pushed], sizeof(signal_entry_t) * to_push); \
     pushed   += to_push; \
     ct->used += to_push; \
+	logdbg(stdout, "context_thread[%d] buf_index[%d] total[%d] records pushed. read[%d] used[%d]", cidx, st-to_push, to_push, ct->read, ct->used); \
 } while(0)
 
         pthread_mutex_lock(&ct->mutex);
-        if (ct->read + ct->used < CONTEXT_BUF_CACHED) {
+
+        if (ct->read + ct->used < CONTEXT_BUF_CACHED)
+		{
+			/*logdbg(stdout, "context_thread[%d] read[%d] used[%d] ", cidx, ct->read, ct->used);*/
             _DO_PUSH(ct->read + ct->used, CONTEXT_BUF_CACHED - ct->read - ct->used);
-            _DO_PUSH(0, ct->read);
+            /*_DO_PUSH(0, ct->read);*/
         } else {
             _DO_PUSH(ct->read + ct->used - CONTEXT_BUF_CACHED, CONTEXT_BUF_CACHED - ct->used);
         }
 #undef _DO_PUSH
 
         pthread_mutex_unlock(&ct->mutex);
+
         pthread_cond_signal(&ct->pushed);
         cidx = (cidx + 1) % CFG(context_thread);
     }

@@ -32,6 +32,7 @@ void * comsumer_thread(void * th_num)
             update_context(se);
             cthread->read = (++cthread->read) % CONTEXT_BUF_CACHED;
             cthread->used--;
+			logdbg(stdout, "context_thread[%d] buf_index[%d] consumed. read[%d] used[%d]", thread_num, cthread->read-1, cthread->read, cthread->used);
             pthread_mutex_unlock(&cthread->mutex);
         } else {
             spin_count++;
